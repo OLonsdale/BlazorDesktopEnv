@@ -2,6 +2,184 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+mouse(@mousex, @mousey) window origin(@x, @y) window dimensions(@(height)*@(width) dragging (hold alt): @dragging
 
-Welcome to your new app.
+<style>
+
+    #container {
+        width: 90vw;
+        height: 90vh;
+        outline: 1px solid blue;
+    }
+
+    #window {
+        outline: 1px solid black;
+        width: @(width)px;
+        height: @(height)px;
+        position: fixed;
+        left: @(x)px;
+        top: @(y)px;
+    }
+
+    #drag-left {
+        background-color: @(resizing_left ? "red" : "transparent");
+        outline: 1px dotted red;
+        width: @(grab_size)px;
+        height: @(height)px;
+        position: fixed;
+        left: @(x)px;
+        top: @(y)px;
+    }
+
+    #drag-right {
+        background-color: @(resizing_right ? "red" : "transparent");
+        outline: 1px dotted red;
+        width: @(grab_size)px;
+        height: @(height)px;
+        position: fixed;
+        left: @(x + width - grab_size)px;
+        top: @(y)px;
+    }
+
+    #drag-top {
+        background-color: @(resizing_top ? "red" : "transparent");
+        outline: 1px dotted red;
+        width: @(width)px;
+        height: @(grab_size)px;
+        position: fixed;
+        left: @(x)px;
+        top: @(y)px;
+    }
+
+    #drag-bottom {
+        background-color: @(resizing_bottom ? "red" : "transparent");
+        outline: 1px dotted red;
+        width: @(width)px;
+        height: @(grab_size)px;
+        position: fixed;
+        left: @(x)px;
+        top: @(y + height - grab_size)px;
+    }
+
+</style>
+
+<div id="container" @onmousemove="MouseMove">
+
+    <div id="window" @ondragstart="MouseDown" @ondragend="MouseDown">
+
+        <div id="drag-left"></div>
+        <div id="drag-right"></div>
+        <div id="drag-top"></div>
+        <div id="drag-bottom"></div>
+
+    </div>
+
+</div>
+
+@code {
+
+    double mousex = 0;
+    double mousey = 0;
+
+    double x = 0;
+    double y = 0;
+
+    double width = 100;
+    double height = 100;
+
+    bool dragging = false;
+
+    bool resizing_left;
+    bool resizing_right;
+    bool resizing_top;
+    bool resizing_bottom;
+
+    int grab_size = 5;
+    int min_window_size => grab_size * 4;
+
+    async Task MouseMove(MouseEventArgs mouse)
+    {
+        mousex = mouse.ClientX;
+        mousey = mouse.ClientY;
+    }
+
+    async Task MouseDown(MouseEventArgs mouse)
+    {
+        if (mouse.AltKey)
+        {
+            dragging = true;
+            return;
+        }
+
+        if (mouse.ClientX > x && mouse.ClientX < (x + grab_size))
+            resizing_left = true;
+
+        if (mouse.ClientX > (x + width - grab_size))
+            resizing_right = true;
+
+        if (mouse.ClientY > y && mouse.ClientY < (y + grab_size))
+            resizing_top = true;
+
+        if (mouse.ClientY > (y + height - grab_size))
+            resizing_bottom = true;
+    }
+
+    async Task MouseUp(MouseEventArgs mouse)
+    {
+        if (dragging)
+        {
+            x = mouse.ClientX;
+            y = mouse.ClientY;
+        }
+
+        dragging = false;
+
+        if (resizing_right)
+        {
+            while (x + width < mouse.ClientX) width++;
+            while (x + width > mouse.ClientX && width > min_window_size) width--;
+        }
+
+        if (resizing_left)
+        {
+            while (x > mouse.ClientX)
+            {
+                x--;
+                width++;
+            }
+
+            while (x < mouse.ClientX && width > min_window_size)
+            {
+                x++;
+                width--;
+            }
+        }
+
+        if (resizing_bottom)
+        {
+            while (y + height < mouse.ClientY) height++;
+            while (y + height > mouse.ClientY && height > min_window_size) height--;
+        }
+
+        if (resizing_top)
+        {
+            while (mouse.ClientY < y)
+            {
+                y--;
+                height++;
+            }
+
+            while (mouse.ClientY > y && height > min_window_size)
+            {
+                y++;
+                height--;
+            }
+        }
+
+        resizing_right = false;
+        resizing_left = false;
+        resizing_top = false;
+        resizing_bottom = false;
+    }
+
+}
