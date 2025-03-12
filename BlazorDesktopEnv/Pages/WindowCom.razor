@@ -1,0 +1,122 @@
+<div style="@WindowStyle">
+    <div style="@GrabLeftStyle"></div>
+    <div style="@GrabRightStyle"></div>
+    <div style="@GrabTopStyle"></div>
+    <div style="@GrabBottomStyle"></div>
+</div>
+
+@code {
+
+    // Styles in code-behind to make the string intep work
+
+    double originX;
+    double originY;
+    double width = 100;
+    double height = 100;
+    double grabSize = 5;
+    double minWindowSize => grabSize * 3;
+    
+    public double windowLeft => originX;
+    public double windowRight => originX + width;
+    public double windowTop => originY;
+    public double windowBottom => originY + height;
+
+    bool resizingLeft;
+    bool resizingRight;
+    bool resizingTop;
+    bool resizingBottom;
+
+    bool dragging = false;
+
+    public void HandleMouseDown(MouseEventArgs mouse)
+    {
+        Console.WriteLine("Window Mouse Down");
+        
+        if (mouse.AltKey)
+        {
+            dragging = true;
+            Console.WriteLine("Moving Window");
+            StateHasChanged();
+            return;
+        }
+
+        if (mouse.ClientX > originX && mouse.ClientX < (originX + grabSize))
+            resizingLeft = true;
+
+        if (mouse.ClientX > (originX + width - grabSize) && mouse.ClientX < originX + width)
+            resizingRight = true;
+
+        if (mouse.ClientY > originY && mouse.ClientY < (originY + grabSize))
+            resizingTop = true;
+
+        if (mouse.ClientY > (originY + height - grabSize) && mouse.ClientY < originY + height)
+            resizingBottom = true;
+        
+        StateHasChanged();
+
+    }
+
+    public void HandleMouseUp(MouseEventArgs mouse)
+    {
+        Console.WriteLine("Window Mouse Up");
+
+        if (dragging)
+        {
+            originX = mouse.ClientX;
+            originY = mouse.ClientY;
+            Console.WriteLine("Moved Window");
+        }
+
+        dragging = false;
+
+        if (resizingRight)
+        {
+            while (originX + width < mouse.ClientX) width++;
+            while (originX + width > mouse.ClientX && width > minWindowSize) width--;
+        }
+
+        if (resizingLeft)
+        {
+            while (originX > mouse.ClientX)
+            {
+                originX--;
+                width++;
+            }
+
+            while (originX < mouse.ClientX && width > minWindowSize)
+            {
+                originX++;
+                width--;
+            }
+        }
+
+        if (resizingBottom)
+        {
+            while (originY + height < mouse.ClientY) height++;
+            while (originY + height > mouse.ClientY && height > minWindowSize) height--;
+        }
+
+        if (resizingTop)
+        {
+            while (mouse.ClientY < originY)
+            {
+                originY--;
+                height++;
+            }
+
+            while (mouse.ClientY > originY && height > minWindowSize)
+            {
+                originY++;
+                height--;
+            }
+        }
+
+        resizingRight = false;
+        resizingLeft = false;
+        resizingTop = false;
+        resizingBottom = false;
+        StateHasChanged();
+
+    }
+    
+}

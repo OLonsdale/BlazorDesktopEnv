@@ -2,100 +2,40 @@
 
 <PageTitle>Home</PageTitle>
 
-mouse(@mousex, @mousey) window origin(@x, @y) window dimensions(@(height)*@(width) dragging (hold alt): @dragging
+mouse(@mousex, @mousey)
 
 <style>
-
     #container {
         width: 90vw;
         height: 90vh;
         outline: 1px solid blue;
     }
-
-    #window {
-        outline: 1px solid black;
-        width: @(width)px;
-        height: @(height)px;
-        position: fixed;
-        left: @(x)px;
-        top: @(y)px;
-    }
-
-    #drag-left {
-        background-color: @(resizing_left ? "red" : "transparent");
-        outline: 1px dotted red;
-        width: @(grab_size)px;
-        height: @(height)px;
-        position: fixed;
-        left: @(x)px;
-        top: @(y)px;
-    }
-
-    #drag-right {
-        background-color: @(resizing_right ? "red" : "transparent");
-        outline: 1px dotted red;
-        width: @(grab_size)px;
-        height: @(height)px;
-        position: fixed;
-        left: @(x + width - grab_size)px;
-        top: @(y)px;
-    }
-
-    #drag-top {
-        background-color: @(resizing_top ? "red" : "transparent");
-        outline: 1px dotted red;
-        width: @(width)px;
-        height: @(grab_size)px;
-        position: fixed;
-        left: @(x)px;
-        top: @(y)px;
-    }
-
-    #drag-bottom {
-        background-color: @(resizing_bottom ? "red" : "transparent");
-        outline: 1px dotted red;
-        width: @(width)px;
-        height: @(grab_size)px;
-        position: fixed;
-        left: @(x)px;
-        top: @(y + height - grab_size)px;
-    }
-
 </style>
 
-<div id="container" @onmousemove="MouseMove">
+<button @onclick="AddWindow">Add Window</button>
 
-    <div id="window" @ondragstart="MouseDown" @ondragend="MouseDown">
-
-        <div id="drag-left"></div>
-        <div id="drag-right"></div>
-        <div id="drag-top"></div>
-        <div id="drag-bottom"></div>
-
-    </div>
-
+<div id="container" @onmousedown="MouseDown" @onmouseup="MouseUp" @onmousemove="MouseMove">
+    @foreach (var win in windowRefs)
+    {
+        <WindowCom @ref="win.Ref" />
+    }
 </div>
 
 @code {
-
     double mousex = 0;
     double mousey = 0;
 
-    double x = 0;
-    double y = 0;
+    class WindowReference
+    {
+        public WindowCom? Ref { get; set; }
+    }
 
-    double width = 100;
-    double height = 100;
+    List<WindowReference> windowRefs = [];
 
-    bool dragging = false;
-
-    bool resizing_left;
-    bool resizing_right;
-    bool resizing_top;
-    bool resizing_bottom;
-
-    int grab_size = 5;
-    int min_window_size => grab_size * 4;
+    protected override void OnInitialized()
+    {
+        windowRefs.Add(new WindowReference()); // Add an empty reference entry
+    }
 
     async Task MouseMove(MouseEventArgs mouse)
     {
@@ -105,81 +45,29 @@ mouse(@mousex, @mousey) window origin(@x, @y) window dimensions(@(height)*@(widt
 
     async Task MouseDown(MouseEventArgs mouse)
     {
-        if (mouse.AltKey)
+        foreach (var win in windowRefs)
         {
-            dragging = true;
-            return;
+            if (win.Ref != null && 
+                mouse.ClientX > win.Ref.windowLeft && mouse.ClientX < win.Ref.windowRight && 
+                mouse.ClientY < win.Ref.windowBottom && mouse.ClientY > win.Ref.windowTop)
+            {
+                win.Ref.HandleMouseDown(mouse);
+                return;
+            }
         }
-
-        if (mouse.ClientX > x && mouse.ClientX < (x + grab_size))
-            resizing_left = true;
-
-        if (mouse.ClientX > (x + width - grab_size))
-            resizing_right = true;
-
-        if (mouse.ClientY > y && mouse.ClientY < (y + grab_size))
-            resizing_top = true;
-
-        if (mouse.ClientY > (y + height - grab_size))
-            resizing_bottom = true;
     }
 
     async Task MouseUp(MouseEventArgs mouse)
     {
-        if (dragging)
+        foreach (var win in windowRefs)
         {
-            x = mouse.ClientX;
-            y = mouse.ClientY;
+            win.Ref?.HandleMouseUp(mouse);
         }
-
-        dragging = false;
-
-        if (resizing_right)
-        {
-            while (x + width < mouse.ClientX) width++;
-            while (x + width > mouse.ClientX && width > min_window_size) width--;
-        }
-
-        if (resizing_left)
-        {
-            while (x > mouse.ClientX)
-            {
-                x--;
-                width++;
-            }
-
-            while (x < mouse.ClientX && width > min_window_size)
-            {
-                x++;
-                width--;
-            }
-        }
-
-        if (resizing_bottom)
-        {
-            while (y + height < mouse.ClientY) height++;
-            while (y + height > mouse.ClientY && height > min_window_size) height--;
-        }
-
-        if (resizing_top)
-        {
-            while (mouse.ClientY < y)
-            {
-                y--;
-                height++;
-            }
-
-            while (mouse.ClientY > y && height > min_window_size)
-            {
-                y++;
-                height--;
-            }
-        }
-
-        resizing_right = false;
-        resizing_left = false;
-        resizing_top = false;
-        resizing_bottom = false;
     }
 
+    void AddWindow()
+    {
+        windowRefs.Add(new WindowReference());
+        
+    }
 }
